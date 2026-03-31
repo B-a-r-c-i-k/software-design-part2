@@ -11,18 +11,19 @@ public class RatePrinterService {
 
 	private static final Logger logger = LoggerFactory.getLogger(RatePrinterService.class);
 
-	private final RestTemplate restTemplate = new RestTemplate();
-	private final ProviderProperties providerProperties;
+	private static final String PROVIDER_SERVICE_ID = "currency-rate-provider";
+	private static final String RATE_URL = "http://" + PROVIDER_SERVICE_ID + "/api/rate";
 
-	public RatePrinterService(ProviderProperties providerProperties) {
-		this.providerProperties = providerProperties;
+	private final RestTemplate restTemplate;
+
+	public RatePrinterService(RestTemplate restTemplate) {
+		this.restTemplate = restTemplate;
 	}
 
 	@Scheduled(fixedRate = 5000)
 	public void printRate() {
-		String url = providerProperties.getBaseUrl() + "/api/rate";
 		try {
-			RateResponse response = restTemplate.getForObject(url, RateResponse.class);
+			RateResponse response = restTemplate.getForObject(RATE_URL, RateResponse.class);
 			if (response != null) {
 				logger.info("[{}] {} = {}",
 						java.time.LocalTime.now(),
@@ -30,7 +31,7 @@ public class RatePrinterService {
 						response.rate());
 			}
 		} catch (Exception e) {
-			logger.warn("Failed to get rate from {}: {}", url, e.getMessage());
+			logger.warn("Failed to get rate from {}: {}", RATE_URL, e.getMessage());
 		}
 	}
 }

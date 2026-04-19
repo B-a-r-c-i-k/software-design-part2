@@ -1,6 +1,69 @@
-version: "3.8"
-
 services:
+  zookeeper:
+    build:
+      context: ./deploy/zookeeper
+    ports:
+      - "2181:2181"
+      - "9414:9414"
+
+  prometheus:
+    image: prom/prometheus:v2.53.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - zookeeper
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  client:
+    build:
+      context: ./software
+      dockerfile: rate-printer/Dockerfile
+    environment:
+      SPRING_CLOUD_ZOOKEEPER_CONNECT_STRING: zookeeper:2181
+      SERVER_PORT: "8081"
+      APP_METRICS_LABEL: client
+      APP_CLIENT_ID: client
+    depends_on:
+      - zookeeper
+
+  service1:
+    build:
+      context: ./software
+      dockerfile: currency-rate-provider/Dockerfile
+    environment:
+      SPRING_CLOUD_ZOOKEEPER_CONNECT_STRING: zookeeper:2181
+      SERVER_PORT: "8080"
+      APP_METRICS_LABEL: service1
+    depends_on:
+      - zookeeper
+
+  service2:
+    build:
+      context: ./software
+      dockerfile: currency-rate-provider/Dockerfile
+    environment:
+      SPRING_CLOUD_ZOOKEEPER_CONNECT_STRING: zookeeper:2181
+      SERVER_PORT: "8080"
+      APP_METRICS_LABEL: service2
+    depends_on:
+      - zookeeper
+
   pact-broker:
     image: pactfoundation/pact-broker:latest
     ports:
@@ -9,4 +72,3 @@ services:
       PACT_BROKER_LOG_LEVEL: INFO
       PACT_BROKER_DATABASE_ADAPTER: sqlite
       PACT_BROKER_DATABASE_NAME: /tmp/pact_broker.sqlite3
-

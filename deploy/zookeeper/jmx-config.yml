@@ -1,0 +1,10 @@
+---
+lowercaseOutputLabelNames: true
+lowercaseOutputName: true
+whitelistObjectNames:
+  - "java.lang:type=Memory"
+  - "java.lang:type=MemoryPool,*"
+  - "java.lang:type=OperatingSystem"
+  - "java.lang:type=Runtime"
+rules:
+  - pattern: ".*"
